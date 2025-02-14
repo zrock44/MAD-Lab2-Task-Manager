@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">MADLab2TaskManager</string>
+    <string name="input_label">Task</string>
 </resources>
