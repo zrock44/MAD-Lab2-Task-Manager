@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">MADLab2TaskManager</string>
-    <string name="input_label">Task</string>
+    <string name="input_label">New Task</string>
+    <string name="delete_button_description">Button to delete a task</string>
 </resources>
