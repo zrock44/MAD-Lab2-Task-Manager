@@ -9,13 +9,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -27,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -36,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.madlab2taskmanager.data.Task
@@ -60,15 +65,24 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
     var inputText by remember { mutableStateOf("") }
+    val listOfTasks = remember { mutableStateListOf<Task>() }
+    // FOR TESTING//////////////////////////////////////////////////////////////////////////////////
+    listOfTasks.add(Task(name = "Test task 1", completed = true))
+    listOfTasks.add(Task(name = "Test task 2", completed = false))
 
     Column {
         TaskInputField(
             value = inputText,
             onValueChange = { inputText = it }
         )
-        TaskItem(
-            task = Task(name = "Test task", completed = false),
-            onClick = {},
+        // FOR TESTING//////////////////////////////////////////////////////////////////////////////
+        Card {
+            Text(
+                text = inputText
+            )
+        }
+        TaskList(
+            taskList = listOfTasks
         )
     }
 }
@@ -79,25 +93,28 @@ fun TaskInputField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
+    Card(
+        modifier = modifier.fillMaxWidth()
     ) {
-        TaskInput(
-            label = R.string.input_label,
-            leadingIcon = Icons.Filled.Create,
-            keyboardOptions = KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Done
-            ),
-            value = value,
-            onValueChange = onValueChange
-        )
-        TaskButton(
-            // MAKE THE ICON DYNAMIC DEPENDING ON STATE OF ENABLED//////////////////////////////////
-            icon = Icons.Filled.Send,
-            onClick = {},
-            enabled = true
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TaskInput(
+                label = R.string.input_label,
+                leadingIcon = Icons.Filled.Create,
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Done
+                ),
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.weight(1f)
+            )
+            TaskButton(
+                icon = Icons.Filled.Add,
+                onClick = {},
+                enabled = true
+            )
+        }
     }
 }
 
@@ -125,7 +142,8 @@ fun TaskInput(
             Text(
                 text = stringResource(label)
             )
-        }
+        },
+        modifier = modifier
     )
 }
 
@@ -146,7 +164,7 @@ fun TaskButton(
             disabledContentColor = Color.LightGray
         ),
         enabled = enabled,
-        shape = RoundedCornerShape(3.dp),
+        shape = RoundedCornerShape(0.dp),
         modifier = Modifier.size(56.dp)
     ) {
         Icon(
@@ -157,14 +175,21 @@ fun TaskButton(
 }
 
 @Composable
-fun TaskList(modifier: Modifier = Modifier) {
-
+fun TaskList(taskList: List<Task>, modifier: Modifier = Modifier) {
+    LazyColumn {
+        items(taskList) {
+            TaskItem(
+                task = it,
+                onDeleteClick = {}
+            )
+        }
+    }
 }
 
 @Composable
 fun TaskItem(
     task: Task,
-    onClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -178,13 +203,14 @@ fun TaskItem(
                 onCheckedChange = { task.completed = it }
             )
             Text(
-                text = task.name
+                text = task.name,
+                textDecoration = if (task.completed) TextDecoration.LineThrough else null
             )
             Spacer(
                 modifier = Modifier.weight(1f)
             )
             IconButton(
-                onClick = onClick
+                onClick = onDeleteClick
             ) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
