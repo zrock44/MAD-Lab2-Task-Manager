@@ -5,6 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.StringRes
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,10 +26,12 @@ import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.CheckboxColors
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -40,7 +44,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -56,15 +59,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MADLab2TaskManagerTheme {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .statusBarsPadding()
-                        .navigationBarsPadding()
-                        .padding(16.dp)
-                ) {
-                    MainScreen()
-                }
+                MainScreen(Modifier.background(MaterialTheme.colorScheme.background))
             }
         }
     }
@@ -74,28 +69,40 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(modifier: Modifier = Modifier) {
     var inputText by remember { mutableStateOf("") }
     val listOfTasks = remember { mutableStateListOf<Task>() }
-    // FOR TESTING//////////////////////////////////////////////////////////////////////////////////
+
+    //FOR TESTING///////////////////////////////////////////////////////////////////////////////////
     var counter by remember { mutableIntStateOf(0) }
     if(counter == 0) {
-        listOfTasks.add(Task(name = "Test task 1"))
+        listOfTasks.add(Task(name = "Test task 1. Tell me what it is you think you know. You think that impresses me? Not so, my friend. Not so."))
         listOfTasks.add(Task(name = "Test task 2"))
         counter++
     }
 
-    Column {
-        TaskInputField(
-            value = inputText,
-            onValueChange = { inputText = it }
-        )
-        // FOR TESTING//////////////////////////////////////////////////////////////////////////////
-        Card {
-            Text(
-                text = inputText
+    Surface(
+        modifier = modifier
+            .padding(16.dp)
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+    ) {
+        Column {
+            TaskInputField(
+                value = inputText,
+                onValueChange = { inputText = it },
+                onAddButtonClick = {
+                    listOfTasks.add(Task(name = inputText.trim()))
+                    inputText = ""
+                },
+                buttonEnabled = if (inputText.trim() != "") true else false
+            )
+            Spacer(
+                modifier = Modifier.size(width = 0.dp, height = 32.dp)
+            )
+            TaskList(
+                taskList = listOfTasks,
+                onDeleteClick = {  }
             )
         }
-        TaskList(
-            taskList = listOfTasks
-        )
     }
 }
 
@@ -103,10 +110,14 @@ fun MainScreen(modifier: Modifier = Modifier) {
 fun TaskInputField(
     value: String,
     onValueChange: (String) -> Unit,
+    onAddButtonClick: () -> Unit,
+    buttonEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
+        //COLOR USED////////////////////////////////////////////////////////////////////////////////
+        border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically
@@ -123,8 +134,8 @@ fun TaskInputField(
             )
             TaskButton(
                 icon = Icons.Filled.Add,
-                onClick = {},
-                enabled = true
+                onClick = onAddButtonClick,
+                enabled = buttonEnabled
             )
         }
     }
@@ -166,33 +177,35 @@ fun TaskButton(
     enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
-    FilledIconButton(
+    OutlinedIconButton(
         onClick = onClick,
-        // EDIT THESE LATER/////////////////////////////////////////////////////////////////////////
+        //COLOR USED////////////////////////////////////////////////////////////////////////////////
         colors = IconButtonColors(
-            containerColor = Color(0xFF005500),
-            contentColor = Color.White,
-            disabledContainerColor = Color.DarkGray,
-            disabledContentColor = Color.LightGray
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.tertiary,
+            disabledContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            disabledContentColor = MaterialTheme.colorScheme.primaryContainer
         ),
         enabled = enabled,
         shape = RoundedCornerShape(0.dp),
-        modifier = Modifier.size(56.dp)
+        modifier = Modifier.size(56.dp),
+        //COLOR USED////////////////////////////////////////////////////////////////////////////////
+        border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline)
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null
+            contentDescription = null,
         )
     }
 }
 
 @Composable
-fun TaskList(taskList: List<Task>, modifier: Modifier = Modifier) {
+fun TaskList(taskList: List<Task>, onDeleteClick: () -> Unit, modifier: Modifier = Modifier) {
     LazyColumn {
         items(taskList) {
             TaskItem(
                 task = it,
-                onDeleteClick = {}
+                onDeleteClick = {  }
             )
         }
     }
@@ -201,30 +214,54 @@ fun TaskList(taskList: List<Task>, modifier: Modifier = Modifier) {
 @Composable
 fun TaskItem(
     task: Task,
-    onDeleteClick: () -> Unit,
+    onDeleteClick: (Task) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var checked by remember { mutableStateOf(false) }
 
     Card(
-        modifier = modifier
+        modifier = modifier.padding(bottom = 8.dp),
+        //COLOR USED////////////////////////////////////////////////////////////////////////////////
+        border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(
                 checked = checked,
-                onCheckedChange = { checked = !checked }
+                onCheckedChange = { checked = !checked },
+                colors = CheckboxColors(
+                    checkedCheckmarkColor = MaterialTheme.colorScheme.tertiary,
+                    checkedBoxColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    checkedBorderColor = MaterialTheme.colorScheme.tertiary,
+                    uncheckedCheckmarkColor = MaterialTheme.colorScheme.outline,
+                    uncheckedBoxColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledCheckedBoxColor = MaterialTheme.colorScheme.background,
+                    disabledUncheckedBoxColor = MaterialTheme.colorScheme.background,
+                    disabledIndeterminateBoxColor = MaterialTheme.colorScheme.background,
+                    disabledBorderColor = MaterialTheme.colorScheme.background,
+                    disabledUncheckedBorderColor = MaterialTheme.colorScheme.background,
+                    disabledIndeterminateBorderColor = MaterialTheme.colorScheme.background
+                )
             )
             Text(
                 text = task.name,
-                textDecoration = if (checked) TextDecoration.LineThrough else null
+                textDecoration = if(checked) TextDecoration.LineThrough else null,
+                color = if(checked) {
+                    MaterialTheme.colorScheme.outline
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 8.dp)
             )
             Spacer(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(0.01f)
             )
             IconButton(
-                onClick = onDeleteClick
+                onClick = { onDeleteClick }
             ) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
@@ -239,14 +276,14 @@ fun TaskItem(
 @Composable
 fun TaskManagerPreview() {
     MADLab2TaskManagerTheme {
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(16.dp)
-        ) {
-            MainScreen()
-        }
+        MainScreen(Modifier.background(MaterialTheme.colorScheme.background))
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TaskManagerPreviewDarkMode() {
+    MADLab2TaskManagerTheme(darkTheme = true) {
+        MainScreen(Modifier.background(MaterialTheme.colorScheme.background))
     }
 }
