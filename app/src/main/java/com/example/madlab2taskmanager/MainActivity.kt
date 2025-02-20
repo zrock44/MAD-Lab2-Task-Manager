@@ -10,7 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,15 +24,16 @@ import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
-import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,7 +57,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             MADLab2TaskManagerTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .navigationBarsPadding()
+                        .padding(16.dp)
                 ) {
                     MainScreen()
                 }
@@ -67,8 +75,12 @@ fun MainScreen(modifier: Modifier = Modifier) {
     var inputText by remember { mutableStateOf("") }
     val listOfTasks = remember { mutableStateListOf<Task>() }
     // FOR TESTING//////////////////////////////////////////////////////////////////////////////////
-    listOfTasks.add(Task(name = "Test task 1", completed = true))
-    listOfTasks.add(Task(name = "Test task 2", completed = false))
+    var counter by remember { mutableIntStateOf(0) }
+    if(counter == 0) {
+        listOfTasks.add(Task(name = "Test task 1"))
+        listOfTasks.add(Task(name = "Test task 2"))
+        counter++
+    }
 
     Column {
         TaskInputField(
@@ -154,7 +166,7 @@ fun TaskButton(
     enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
-    OutlinedIconButton(
+    FilledIconButton(
         onClick = onClick,
         // EDIT THESE LATER/////////////////////////////////////////////////////////////////////////
         colors = IconButtonColors(
@@ -192,6 +204,8 @@ fun TaskItem(
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var checked by remember { mutableStateOf(false) }
+
     Card(
         modifier = modifier
     ) {
@@ -199,12 +213,12 @@ fun TaskItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(
-                checked = task.completed,
-                onCheckedChange = { task.completed = it }
+                checked = checked,
+                onCheckedChange = { checked = !checked }
             )
             Text(
                 text = task.name,
-                textDecoration = if (task.completed) TextDecoration.LineThrough else null
+                textDecoration = if (checked) TextDecoration.LineThrough else null
             )
             Spacer(
                 modifier = Modifier.weight(1f)
@@ -225,6 +239,14 @@ fun TaskItem(
 @Composable
 fun TaskManagerPreview() {
     MADLab2TaskManagerTheme {
-        MainScreen()
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(16.dp)
+        ) {
+            MainScreen()
+        }
     }
 }
