@@ -37,11 +37,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -65,18 +65,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// Main composable. This composable handles the state of both the text in the "new task" input
+// and the list of tasks that the app shows.
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
     var inputText by remember { mutableStateOf("") }
     val listOfTasks = remember { mutableStateListOf<Task>() }
-
-    //FOR TESTING///////////////////////////////////////////////////////////////////////////////////
-    var counter by remember { mutableIntStateOf(0) }
-    if(counter == 0) {
-        listOfTasks.add(Task(name = "Test task 1. Tell me what it is you think you know. You think that impresses me? Not so, my friend. Not so."))
-        listOfTasks.add(Task(name = "Test task 2"))
-        counter++
-    }
 
     Surface(
         modifier = modifier
@@ -90,22 +84,23 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 value = inputText,
                 onValueChange = { inputText = it },
                 onAddButtonClick = {
-                    listOfTasks.add(Task(name = inputText.trim()))
+                    listOfTasks.add(Task(name = inputText.trim(), completed = false))
                     inputText = ""
                 },
                 buttonEnabled = if (inputText.trim() != "") true else false
             )
-            Spacer(
-                modifier = Modifier.size(width = 0.dp, height = 32.dp)
+            TaskCount(
+                taskCount = listOfTasks.size,
+                modifier = Modifier.padding(vertical = 8.dp)
             )
             TaskList(
-                taskList = listOfTasks,
-                onDeleteClick = {  }
+                listOfTasks = listOfTasks
             )
         }
     }
 }
 
+// Composable that puts together TaskInput and TaskButton within a row that is within a card.
 @Composable
 fun TaskInputField(
     value: String,
@@ -116,7 +111,6 @@ fun TaskInputField(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        //COLOR USED////////////////////////////////////////////////////////////////////////////////
         border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline)
     ) {
         Row(
@@ -141,6 +135,8 @@ fun TaskInputField(
     }
 }
 
+// The input box at the top of the app for adding a new task. This along with TaskButton are made
+// to be customizable when called, because I felt like doing it that way for some reason.
 @Composable
 fun TaskInput(
     @StringRes label: Int,
@@ -170,6 +166,10 @@ fun TaskInput(
     )
 }
 
+// The button that adds a new task to the list. It is disabled when there is nothing in the
+// TaskInput field or when only whitespace is present. The icon in the button is colored the same
+// as the button itself when the button is disabled, to give the illusion that the icon is only
+// present when the button is enabled.
 @Composable
 fun TaskButton(
     icon: ImageVector,
@@ -179,7 +179,6 @@ fun TaskButton(
 ) {
     OutlinedIconButton(
         onClick = onClick,
-        //COLOR USED////////////////////////////////////////////////////////////////////////////////
         colors = IconButtonColors(
             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
             contentColor = MaterialTheme.colorScheme.tertiary,
@@ -189,7 +188,6 @@ fun TaskButton(
         enabled = enabled,
         shape = RoundedCornerShape(0.dp),
         modifier = Modifier.size(56.dp),
-        //COLOR USED////////////////////////////////////////////////////////////////////////////////
         border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline)
     ) {
         Icon(
@@ -199,29 +197,58 @@ fun TaskButton(
     }
 }
 
+// This is a little extra thing I threw in. This is simply a card that contains text which shows
+// a count of how many tasks are in the list.
 @Composable
-fun TaskList(taskList: List<Task>, onDeleteClick: () -> Unit, modifier: Modifier = Modifier) {
+fun TaskCount(
+    taskCount: Int,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+        modifier = modifier
+    ) {
+        Text(
+            text = "Tasks: $taskCount",
+            modifier = Modifier.padding(vertical = 3.dp, horizontal = 6.dp)
+        )
+    }
+}
+
+// Creates the lazy column for the task items.
+@Composable
+fun TaskList(
+    listOfTasks: SnapshotStateList<Task>,
+    modifier: Modifier = Modifier
+) {
     LazyColumn {
-        items(taskList) {
+        items(listOfTasks) {
             TaskItem(
                 task = it,
-                onDeleteClick = {  }
+                onDeleteClick = { listOfTasks.remove(it) }
             )
         }
     }
 }
 
+// Composable for each individual task item that gets listed. This handles the checkboxes in an...
+// interesting way. It has a local variable named "checked" held in state for the completion status
+// of the task. Each task also has a boolean property named "completed" that does the same. Checked
+// is immediately set to the same value as completed, then checked is the value manipulated within
+// the checkbox composable. Whenever the value is flipped, completed gets set to whatever the new
+// value is. I did it this way because doing it with only a local variable or a property caused it
+// to not work correctly in differing ways.
 @Composable
 fun TaskItem(
     task: Task,
-    onDeleteClick: (Task) -> Unit,
+    onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var checked by remember { mutableStateOf(false) }
+    checked = task.completed
 
     Card(
         modifier = modifier.padding(bottom = 8.dp),
-        //COLOR USED////////////////////////////////////////////////////////////////////////////////
         border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline)
     ) {
         Row(
@@ -229,7 +256,10 @@ fun TaskItem(
         ) {
             Checkbox(
                 checked = checked,
-                onCheckedChange = { checked = !checked },
+                onCheckedChange = {
+                    checked = !checked
+                    task.completed = checked
+                },
                 colors = CheckboxColors(
                     checkedCheckmarkColor = MaterialTheme.colorScheme.tertiary,
                     checkedBoxColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -261,7 +291,7 @@ fun TaskItem(
                 modifier = Modifier.weight(0.01f)
             )
             IconButton(
-                onClick = { onDeleteClick }
+                onClick = onDeleteClick
             ) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
@@ -272,10 +302,11 @@ fun TaskItem(
     }
 }
 
+// Light and dark mode previews.
 @Preview(showBackground = true)
 @Composable
 fun TaskManagerPreview() {
-    MADLab2TaskManagerTheme {
+    MADLab2TaskManagerTheme(darkTheme = false) {
         MainScreen(Modifier.background(MaterialTheme.colorScheme.background))
     }
 }
