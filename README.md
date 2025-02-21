@@ -1,5 +1,5 @@
 # Mobile Application Development Lab #2 - Task Manager App
----
+This app displays a list of tasks. The user can add a task simply by typing in the name of the task and tapping the button with the "+" on it. Users can then tap the checkbox on the left of the task to mark it as completed or tap the trash can to delete the task from the list entirely.
 
 # Installation
 To run this application:
